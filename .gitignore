@@ -1,0 +1,46 @@
+# CMake build output
+build/
+build-*/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+
+# Local CMake presets (machine-specific; do not commit)
+CMakeUserPresets.json
+
+# Visual Studio / MSVC
+.vs/
+*.vcxproj*
+*.sln
+
+# Compiled output
+*.exe
+*.dll
+*.lib
+*.pdb
+*.obj
+*.o
+# ...but the .obj files in Models/ are 3D models, not compiler output
+!Models/**/*.obj
+*.a
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Personal tool settings and backups
+.claude/
+*.bak
+
+# Lab handouts (course material, available on Google Classroom)
+*.pdf
+
+# Lab template leftovers not used by the assignment build (CMake builds only src/main.cpp)
+src/Libs/
+src/ProjectPaths.h.in
+Shaders/bgShader.*
+Shaders/lightShader.*
+Models/cube.obj
+Models/suzanne.obj
+Models/Test.obj
+Textures/uvmap.png

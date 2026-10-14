@@ -1,0 +1,4 @@
+newmtl mat0_FoodWorker
+Kd 1.0000 1.0000 1.0000
+map_Kd halloweenbits_texture.png
+
