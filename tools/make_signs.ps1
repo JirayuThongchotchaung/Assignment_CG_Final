@@ -55,4 +55,26 @@ Draw-Centered $g "THAILAND" $fSub $white (New-Object System.Drawing.RectangleF 0
 $bmp.Save((Join-Path $out "sign_michelin.png"), [System.Drawing.Imaging.ImageFormat]::Png)
 $g.Dispose(); $bmp.Dispose()
 
-Write-Output "wrote sign_shop.png, sign_michelin.png"
+# ---- menu board with 2040 prices (512 x 384): dark board, warm text ----
+$bmp, $g = New-Canvas 512 384
+$g.Clear([System.Drawing.Color]::FromArgb(34, 30, 36))
+$g.DrawRectangle((New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(255, 205, 90)), 8), 8, 8, 496, 368)
+$fHead = New-Object System.Drawing.Font "Leelawadee UI", 54, ([System.Drawing.FontStyle]::Bold), ([System.Drawing.GraphicsUnit]::Pixel)
+$fItem = New-Object System.Drawing.Font "Leelawadee UI", 36, ([System.Drawing.FontStyle]::Bold), ([System.Drawing.GraphicsUnit]::Pixel)
+$fFoot = New-Object System.Drawing.Font "Segoe UI", 24, ([System.Drawing.FontStyle]::Bold), ([System.Drawing.GraphicsUnit]::Pixel)
+$cyan = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(120, 230, 255))
+Draw-Centered $g "เมนู 2040" $fHead $gold (New-Object System.Drawing.RectangleF 0, 18, 512, 80)
+$items = @(@("บะหมี่หมูแดง", "120.-"), @("เกี๊ยวน้ำ", "100.-"), @("บะหมี่ต้มยำ", "140.-"))
+$left = New-Object System.Drawing.StringFormat
+$right = New-Object System.Drawing.StringFormat
+$right.Alignment = "Far"
+for ($i = 0; $i -lt $items.Count; $i++) {
+    $y = 110 + $i * 66
+    $g.DrawString($items[$i][0], $fItem, $white, (New-Object System.Drawing.RectangleF 40, $y, 300, 60), $left)
+    $g.DrawString($items[$i][1], $fItem, $gold, (New-Object System.Drawing.RectangleF 300, $y, 172, 60), $right)
+}
+Draw-Centered $g "SCAN TO PAY  |  DRONE DELIVERY" $fFoot $cyan (New-Object System.Drawing.RectangleF 0, 316, 512, 50)
+$bmp.Save((Join-Path $out "sign_menu.png"), [System.Drawing.Imaging.ImageFormat]::Png)
+$g.Dispose(); $bmp.Dispose()
+
+Write-Output "wrote sign_shop.png, sign_michelin.png, sign_menu.png"
