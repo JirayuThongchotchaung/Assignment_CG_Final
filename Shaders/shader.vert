@@ -1,9 +1,53 @@
 #version 330 core
 
+#if defined(DEPTH_PASS)
+
+layout (location = 0) in vec3 pos;
+
+uniform mat4 projection;
+uniform mat4 view;
+uniform mat4 model;
+
+void main()
+{
+    gl_Position = projection * view * model * vec4(pos, 1.0);
+}
+
+#elif defined(POINT_SHADOW_PASS)
+
+layout (location = 0) in vec3 pos;
+
+out vec3 WorldPos;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+void main()
+{
+    WorldPos = vec3(model * vec4(pos, 1.0));
+    gl_Position = projection * view * vec4(WorldPos, 1.0);
+}
+
+#elif defined(SKY_PASS)
+
+out vec2 TexCoord;
+out vec2 NdcPos;
+
+void main()
+{
+    vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+    NdcPos = p * 2.0 - 1.0;
+    TexCoord = p;
+    gl_Position = vec4(NdcPos, 0.0, 1.0);
+}
+
+#else
+
 layout (location = 0) in vec3 pos;
 layout (location = 1) in vec2 aTexCoord;
 layout (location = 2) in vec3 aNormal;
-layout (location = 3) in vec3 aColour;   // material colour (Kd from .mtl)
+layout (location = 3) in vec3 aColour;
 
 out vec4 vCol;
 out vec2 TexCoord;
@@ -12,17 +56,14 @@ out vec3 FragPos;
 out vec4 FragPosLightSpace;
 
 uniform mat4 model;
-uniform mat3 normalMatrix;   // transpose(inverse(model)), computed once per object on the CPU
+uniform mat3 normalMatrix;
 uniform mat4 view;
 uniform mat4 projection;
-uniform mat4 lightSpace;     // sun projection * sun view (shadow map)
-uniform vec2 uvScale;        // texture tiling
+uniform mat4 lightSpace;
+uniform vec2 uvScale;
 
-// Stencil mirror (Week 13): the reflected scene is drawn with reflection = mirror about the
-// puddle plane. Lighting still uses the real (unreflected) world position, so shadows and
-// lights stay correct; only the projected position is mirrored. Identity for normal passes.
 uniform mat4 reflection;
-uniform vec4 clipPlane;      // keep only geometry above the mirror (used with GL_CLIP_DISTANCE0)
+uniform vec4 clipPlane;
 
 void main()
 {
@@ -32,6 +73,7 @@ void main()
     FragPosLightSpace = lightSpace * vec4(FragPos, 1.0);
     vCol = vec4(aColour, 1.0f);
     TexCoord = aTexCoord * uvScale;
-    // the normal matrix keeps normals perpendicular under non-uniform scaling
     Normal = normalMatrix * aNormal;
 }
+
+#endif

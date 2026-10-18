@@ -1,51 +1,4 @@
-﻿// =====================================================================================
-//  References
-// =====================================================================================
-//  Triangle meshes                           -> Week 9 Lecture
-//  Parametric sphere                         -> Week 9 Lecture
-//  Adjacency list (vertices + index triples) -> Week 9 Lecture
-//  Cubic Bezier curve                        -> Week 9 Lecture
-//  Tensor product Bezier patch               -> Week 9 Lecture
-//  Patch normal dP/du x dP/dv                -> Week 9 Lecture
-//  Laplacian smoothing                       -> Week 9 Lecture
-//  Manifold check                            -> Week 9 Lecture
-//
-//  Ray equation                              -> Week 10 Lecture
-//  Ray-plane intersection                    -> Week 10 Lecture
-//  Bounding box                              -> Week 10 Lecture
-//  Ray-AABB slab intersection                -> Week 10 Lecture
-//  First hit problem                         -> Week 10 Lecture
-//
-//  RGB additive model                        -> Week 11 Lecture
-//  HSV colour model                          -> Week 11 Lecture
-//
-//  Directional light                         -> Week 12 Lecture
-//  Point light                               -> Week 12 Lecture
-//  Spot light cut-off                        -> Week 12 Lecture
-//  Spot light soft edges                     -> Week 12 Lecture
-//  Light attenuation                         -> Week 12 Lecture
-//  Ambient light                             -> Week 12 Lecture
-//  Lambert diffuse                           -> Week 12 Lecture
-//  Oren-Nayar diffuse                        -> Week 12 Lecture
-//  Phong specular + shininess                -> Week 12 Lecture
-//  Blinn-Phong specular                      -> Week 12 Lecture
-//  Ambient + diffuse + specular              -> Week 12 Lecture
-//  Flat shading                              -> Week 12 Lecture
-//  Phong interpolation                       -> Week 12 Lecture
-//  Cel (toon) shading                        -> Week 12 Lecture
-//
-//  Shadow mapping (two passes)               -> Week 13 Lecture
-//  Orthographic projection for sun           -> Week 13 Lecture
-//  Perspective divide + depth compare        -> Week 13 Lecture
-//  Shadow acne bias                          -> Week 13 Lecture
-//  Percentage Closer Filtering (PCF)         -> Week 13 Lecture
-//  Hardware shadow maps                      -> Week 13 Lecture
-//  Omnidirectional cube shadow map           -> Week 13 Lecture
-//  Stencil buffer                            -> Week 13 Lecture
-//  Stencil buffer real-time mirror           -> Week 13 Lecture
-//  Ray casting (mouse picking)               -> Week 13 Lecture
-// =====================================================================================
-#undef GLFW_DLL
+﻿#undef GLFW_DLL
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -86,13 +39,18 @@ public:
     Shader& operator=(const Shader&) = delete;
     ~Shader() { if (program) glDeleteProgram(program); }
 
-    // คอมไพล์ vertex กับ fragment shader แล้วลิ้งรวมเป็นโปรแกรมเดียว
-    void CreateFromFiles(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath)
+    void CreateFromFiles(const std::filesystem::path& vertexPath, const std::filesystem::path& fragmentPath,
+                         const char* passDefine = nullptr)
     {
         std::string vertexCode = ReadFile(vertexPath);
         std::string fragmentCode = ReadFile(fragmentPath);
         if (vertexCode.empty() || fragmentCode.empty())
             return;
+        if (passDefine)
+        {
+            AddDefine(vertexCode, passDefine);
+            AddDefine(fragmentCode, passDefine);
+        }
         program = glCreateProgram();
         AddShader(vertexCode.c_str(), GL_VERTEX_SHADER);
         AddShader(fragmentCode.c_str(), GL_FRAGMENT_SHADER);
@@ -127,6 +85,14 @@ private:
         std::stringstream ss;
         ss << in.rdbuf();
         return ss.str();
+    }
+
+    // #version ต้องเป็นบรรทัดแรกเสมอ เลยแทรก #define ต่อจากบรรทัดนั้น
+    static void AddDefine(std::string& code, const char* name)
+    {
+        size_t lineEnd = code.find('\n');
+        size_t at = lineEnd == std::string::npos ? code.size() : lineEnd + 1;
+        code.insert(at, std::string("#define ") + name + "\n");
     }
 
     // คอมไพล์ shader ทีละอัน แล้วเอาไปแปะกับโปรแกรม
@@ -252,8 +218,7 @@ std::string DirectoryOf(const std::string& path)
     return slash == std::string::npos ? std::string() : path.substr(0, slash + 1);
 }
 
-// ตัด space กับ 
- ท้ายบรรทัดทิ้ง ไฟล์จาก windows ชอบมี
+// ตัด space กับ \r ท้ายบรรทัดทิ้ง ไฟล์จาก windows ชอบมี
 std::string TrimLine(std::string s)
 {
     while (!s.empty() && (s.back() == '\r' || s.back() == ' ')) s.pop_back();
@@ -1139,16 +1104,17 @@ void CreateObjects()
 // โหลด shader ทุกตัว แล้วเก็บ location uniform ไว้
 void CreateShaders()
 {
-    auto load = [](const char* vertexFile, const char* fragmentFile)
+    // ทุก pass ใช้ shader.vert กับ shader.frag ไฟล์เดียวกัน ต่างกันแค่ #define ที่เลือก pass
+    auto load = [](const char* passDefine)
     {
         auto shader = std::make_unique<Shader>();
-        shader->CreateFromFiles(shaderDirectory / vertexFile, shaderDirectory / fragmentFile);
+        shader->CreateFromFiles(shaderDirectory / "shader.vert", shaderDirectory / "shader.frag", passDefine);
         return shader;
     };
-    shaders.main = load("shader.vert", "shader.frag");
-    shaders.depth = load("depthShader.vert", "depthShader.frag");
-    shaders.pointShadow = load("pointShadow.vert", "pointShadow.frag");
-    shaders.sky = load("fullscreen.vert", "sky.frag");
+    shaders.main = load(nullptr);
+    shaders.depth = load("DEPTH_PASS");
+    shaders.pointShadow = load("POINT_SHADOW_PASS");
+    shaders.sky = load("SKY_PASS");
 
     mainUniforms = ObjectUniforms::Locate(*shaders.main);
     depthUniforms = ObjectUniforms::Locate(*shaders.depth);
